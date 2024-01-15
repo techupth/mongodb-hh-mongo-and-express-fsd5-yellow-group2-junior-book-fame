@@ -8,13 +8,29 @@ function HomePage() {
   const [products, setProducts] = useState([]);
   const [isError, setIsError] = useState(null);
   const [isLoading, setIsLoading] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [postPerPage, serPostPerpage] = useState(5);
+  const lastPostIndex = currentPage * postPerPage;
+  const firstPostIndex = lastPostIndex - postPerPage;
+  const currentPost = products.slice(firstPostIndex, lastPostIndex);
+  const totalPosts = products.length;
+  const totalPages = Math.ceil(totalPosts / postPerPage);
 
   const getProducts = async () => {
     try {
       setIsError(false);
       setIsLoading(true);
-      const results = await axios("http://localhost:4001/products");
+      let url = `http://localhost:4001/products?name=${searchInput}&category=${selectedCategory}`;
+
+      if (selectedCategory === "all") {
+        url = "http://localhost:4001/products";
+      }
+      const results = await axios(url);
       setProducts(results.data.data);
+
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
@@ -30,7 +46,7 @@ function HomePage() {
 
   useEffect(() => {
     getProducts();
-  }, [products]);
+  }, [products, searchInput, selectedCategory]);
 
   return (
     <div>
@@ -48,16 +64,27 @@ function HomePage() {
         <div className="search-box">
           <label>
             Search product
-            <input type="text" placeholder="Search by name" />
+            <input
+              type="text"
+              placeholder="Search by name"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
           </label>
         </div>
         <div className="category-filter">
           <label>
             View Category
-            <select id="category" name="category" value="it">
+            <select
+              id="category"
+              name="category"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
               <option disabled value="">
                 -- Select a category --
               </option>
+              <option value="all">All</option>
               <option value="it">IT</option>
               <option value="fashion">Fashion</option>
               <option value="food">Food</option>
@@ -71,7 +98,7 @@ function HomePage() {
             <h1>No Products</h1>
           </div>
         )}
-        {products.map((product) => {
+        {currentPost.map((product) => {
           return (
             <div className="product" key={product._id}>
               <div className="product-preview">
@@ -85,8 +112,8 @@ function HomePage() {
               <div className="product-detail">
                 <h1>Product name: {product.name} </h1>
                 <h2>Product price: {product.price}</h2>
-                <h3>Category: IT</h3>
-                <h3>Created Time: 1 Jan 2011, 00:00:00</h3>
+                <h3>Category: {product.category}</h3>
+                <h3>Created Time: {product.created_at}</h3>
                 <p>Product description: {product.description} </p>
                 <div className="product-actions">
                   <button
@@ -124,10 +151,32 @@ function HomePage() {
       </div>
 
       <div className="pagination">
-        <button className="previous-button">Previous</button>
-        <button className="next-button">Next</button>
+        <button
+          className="previous-button"
+          onClick={() => {
+            if (currentPage > 1) {
+              setCurrentPage(currentPage - 1);
+            }
+          }}
+        >
+          Previous
+        </button>
+        <button
+          className="next-button"
+          onClick={() => {
+            if (currentPage < totalPages) {
+              setCurrentPage(currentPage + 1);
+            } else {
+              setCurrentPage(currentPage);
+            }
+          }}
+        >
+          Next
+        </button>
       </div>
-      <div className="pages">1/ total page</div>
+      <div className="pages">
+        {currentPage} / {totalPages}
+      </div>
     </div>
   );
 }

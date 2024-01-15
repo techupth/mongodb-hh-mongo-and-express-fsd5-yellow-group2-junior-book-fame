@@ -6,7 +6,25 @@ const productRouter = Router();
 
 productRouter.get("/", async (req, res) => {
   const collection = db.collection("Products");
-  const products = await collection.find({}).limit(10).toArray();
+  const category = req.query.category;
+  const name = req.query.name;
+  const price = req.query.price;
+
+  const query = {};
+  if (category) {
+    query.category = new RegExp(category, "i");
+  }
+  if (name) {
+    query.name = new RegExp(name, "i");
+  }
+  if (price) {
+    query.price = price;
+  }
+  const products = await collection
+    .find(query)
+    .sort({ created_at: -1 })
+    .limit(10)
+    .toArray();
   return res.json({
     data: products,
   });
@@ -29,7 +47,7 @@ productRouter.get("/:id", async (req, res) => {
 
 productRouter.post("/", async (req, res) => {
   const collection = db.collection("Products");
-  const productData = { ...req.body };
+  const productData = { ...req.body, created_at: new Date() };
   const products = await collection.insertOne(productData);
   return res.json({
     message: "Product has been created successfully",
